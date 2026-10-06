@@ -195,7 +195,7 @@ export default function App() {
     if (state.activeAbility !== 'strike') return;
     if (state.gameMode === 'online' && state.onlineRole && state.turn !== state.onlineRole) return;
 
-    const newState = executeStrikeAbility(state, true, r);
+    const newState = executeStrikeAbility(state, r, c);
     const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
     setState({ ...newState, winner });
     syncStateOnline({ ...newState, winner });

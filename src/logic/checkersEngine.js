@@ -1,4 +1,4 @@
-// "Crazy Chekers" - Core Engine with Strict Online Turn Enforcement & 1-Use Doomsday Limit
+// "Crazy Chekers" - Core Engine with Strict Mandatory Captures, Line Rocket Vaporize, and 3D Chaos
 
 export const INITIAL_ROWS = 8;
 export const INITIAL_COLS = 8;
@@ -72,12 +72,13 @@ export function createInitialState() {
     roomId: null,
     winner: null,
     combatLog: [
-      { id: Date.now(), text: '🔥 CRAZY CHEKERS 5X NEON EDITION!', type: 'system' }
+      { id: Date.now(), text: '🔥 CRAZY CHEKERS 3D ADVANCED HUD READY!', type: 'system' }
     ],
     screenShake: false,
     isWhiteScreenActive: false,
     isBoardSplit: false,
     isDoomsdayUsed: false,
+    is3DView: true, // 3D Perspective Toggle!
     lastEvent: null,
     isLootboxOpen: false,
   };
@@ -92,7 +93,7 @@ export function cloneBoard(board) {
   );
 }
 
-// RED DOOMSDAY BUTTON: CONSUMES TURN!
+// RED DOOMSDAY BUTTON: 1-USE PER GAME, CONSUMES TURN!
 export function executeDoomsdayWhiteDemon(state) {
   if (state.isDoomsdayUsed) return state;
 
@@ -125,7 +126,7 @@ export function executeDoomsdayWhiteDemon(state) {
     isBoardSplit: true,
     isDoomsdayUsed: true,
     activeAbility: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
+    turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [
       { id: Date.now(), text: `🚨 APOKALIPSA! ${player === 'red' ? '🔴 CZERWONY' : '🔵 NIEBIESKI'} UŻYŁ DOOMSDAY BUTTON!`, type: 'nuke' },
       ...state.combatLog,
@@ -146,6 +147,7 @@ export function addClickerCash(state, amount = 1) {
   };
 }
 
+// MANDATORY CAPTURES: If any piece has a capture move, ONLY captures are legal!
 export function getLegalMovesForPlayer(board, player, rows, cols, comboPiece = null) {
   let allCaptures = [];
   let allNormalMoves = [];
@@ -169,6 +171,7 @@ export function getLegalMovesForPlayer(board, player, rows, cols, comboPiece = n
     }
   }
 
+  // MANDATORY CAPTURE RULE: If captures exist, ONLY return captures!
   if (allCaptures.length > 0) {
     return { capturesOnly: true, moves: allCaptures };
   }
@@ -259,6 +262,7 @@ export function getMovesForPiece(board, r, c, rows, cols, isCombo = false) {
     return { normals, captures };
   }
 
+  // STANDARD CHECKER & DAMKA: Own piece jumping is STRICTLY PROHIBITED!
   const directions = isKing
     ? [[-1, -1], [-1, 1], [1, -1], [1, 1]]
     : player === 'red'
@@ -294,16 +298,14 @@ export function getMovesForPiece(board, r, c, rows, cols, isCombo = false) {
         if (midTile && midTile.piece && landTile && landTile.isPlayable && !landTile.piece && landTile.irradiatedTurns === 0) {
           if (midTile.piece.isInvincible > 0) continue;
 
-          const isEnemy = midTile.piece.player !== player;
-          const isFriendlyFire = isCombo && midTile.piece.player === player;
-
-          if (isEnemy || isFriendlyFire) {
+          // ONLY enemy pieces can be captured - NO friendly fire ever!
+          if (midTile.piece.player !== player) {
             captures.push({
               fromR: r,
               fromC: c,
               toR: landR,
               toC: landC,
-              jumped: { r: midR, c: midC, piece: midTile.piece, isFriendly: isFriendlyFire },
+              jumped: { r: midR, c: midC, piece: midTile.piece, isFriendly: false },
             });
           }
         }
@@ -325,11 +327,10 @@ export function getMovesForPiece(board, r, c, rows, cols, isCombo = false) {
         if (currentTile.piece) {
           if (encounteredPiece) break;
           if (currentTile.piece.isInvincible > 0) break;
-          const isEnemy = currentTile.piece.player !== player;
-          const isFriendlyFire = isCombo && currentTile.piece.player === player;
 
-          if (isEnemy || isFriendlyFire) {
-            encounteredPiece = { r: nr, c: nc, piece: currentTile.piece, isFriendly: isFriendlyFire };
+          // ONLY enemy pieces can be jumped - own pieces block movement!
+          if (currentTile.piece.player !== player) {
+            encounteredPiece = { r: nr, c: nc, piece: currentTile.piece, isFriendly: false };
           } else {
             break;
           }
@@ -515,13 +516,12 @@ export function executeShieldAbility(state, targetR, targetC) {
     board: newBoard,
     inventory: newInventory,
     activeAbility: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
+    turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [{ id: Date.now(), text: `🛡️ TARCZA NIEZNISZCZALNOŚCI nałożona na Twoją figurę!`, type: 'action' }, ...state.combatLog],
     lastEvent: { type: 'shield', r: targetR, c: targetC },
   };
 }
 
-// EXECUTE PLACEMENT: CONSUMES TURN!
 export function executePlaceSpawnedUnit(state, targetR, targetC) {
   const newBoard = cloneBoard(state.board);
   const targetTile = newBoard[targetR][targetC];
@@ -574,7 +574,7 @@ export function executePlaceSpawnedUnit(state, targetR, targetC) {
     board: newBoard,
     activeAbility: null,
     pendingSpawnUnit: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
+    turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [{ id: Date.now(), text: logText, type: 'nuke' }, ...state.combatLog],
     screenShake,
     lastEvent: { type: 'nuke', r: targetR, c: targetC },
@@ -611,7 +611,7 @@ export function executeNukeAbility(state, targetR, targetC) {
     scores: newScores,
     inventory: newInventory,
     activeAbility: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
+    turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [{ id: Date.now(), text: `☢️ ATAK ATOMOWY! Zniszczono ${destroyedCount} pionków!`, type: 'nuke' }, ...state.combatLog],
     screenShake: true,
     lastEvent: { type: 'nuke', r: targetR, c: targetC },
@@ -640,36 +640,41 @@ export function executeUFOAbility(state, targetR, targetC) {
     scores: newScores,
     inventory: newInventory,
     activeAbility: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
+    turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [{ id: Date.now(), text: `🛸 UFO PORWAŁO PIONKA z (${targetR+1}, ${targetC+1})!`, type: 'ufo' }, ...state.combatLog],
     lastEvent: { type: 'ufo', r: targetR, c: targetC },
   };
 }
 
-export function executeStrikeAbility(state, isRow, index) {
+// ROCKET STRIKE: VAPORIZES ALL UNITS IN THE ENTIRE ROW + COLUMN (CROSS PATTERN)!
+export function executeStrikeAbility(state, targetR, targetC) {
   const newBoard = cloneBoard(state.board);
   const player = state.turn;
-  let hitTile = null;
+  let destroyedCount = 0;
+  const destroyedPositions = new Set();
 
-  if (isRow) {
-    for (let c = 0; c < state.cols; c++) {
-      if (newBoard[index][c].piece && newBoard[index][c].piece.isInvincible === 0) {
-        hitTile = { r: index, c };
-        newBoard[index][c].piece = null;
-        break;
-      }
-    }
-  } else {
-    for (let r = 0; r < state.rows; r++) {
-      if (newBoard[r][index].piece && newBoard[r][index].piece.isInvincible === 0) {
-        hitTile = { r, c: index };
-        newBoard[r][index].piece = null;
-        break;
-      }
+  // Destroy entire ROW
+  for (let c = 0; c < state.cols; c++) {
+    const key = `${targetR}-${c}`;
+    if (!destroyedPositions.has(key) && newBoard[targetR][c].piece && newBoard[targetR][c].piece.isInvincible === 0) {
+      destroyedCount++;
+      newBoard[targetR][c].piece = null;
+      destroyedPositions.add(key);
     }
   }
 
-  const newScores = { ...state.scores, [player]: state.scores[player] + (hitTile ? 25 : 0) };
+  // Destroy entire COLUMN
+  for (let r = 0; r < state.rows; r++) {
+    const key = `${r}-${targetC}`;
+    if (!destroyedPositions.has(key) && newBoard[r][targetC].piece && newBoard[r][targetC].piece.isInvincible === 0) {
+      destroyedCount++;
+      newBoard[r][targetC].piece = null;
+      destroyedPositions.add(key);
+    }
+  }
+
+  const pointsEarned = destroyedCount * 25;
+  const newScores = { ...state.scores, [player]: state.scores[player] + pointsEarned };
   const newInventory = {
     ...state.inventory,
     [player]: { ...state.inventory[player], strike: state.inventory[player].strike - 1 },
@@ -683,10 +688,10 @@ export function executeStrikeAbility(state, isRow, index) {
     scores: newScores,
     inventory: newInventory,
     activeAbility: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
-    combatLog: [{ id: Date.now(), text: `🚀 NALOT RAKIETOWY wysterelony w ${isRow ? 'wiersz' : 'kolumnę'} ${index+1}!`, type: 'strike' }, ...state.combatLog],
-    screenShake: hitTile ? true : false,
-    lastEvent: { type: 'strike', isRow, index, hitTile },
+    turn: state.turn === 'red' ? 'blue' : 'red',
+    combatLog: [{ id: Date.now(), text: `🚀 NALOT RAKIETOWY zniszczył ${destroyedCount} pionków w krzyżu wiersza ${targetR+1} + kolumny ${targetC+1}!`, type: 'strike' }, ...state.combatLog],
+    screenShake: destroyedCount > 0,
+    lastEvent: { type: 'strike', r: targetR, c: targetC },
   };
 }
 
@@ -708,7 +713,7 @@ export function executeBrothelAbility(state, targetR, targetC) {
     board: newBoard,
     inventory: newInventory,
     activeAbility: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
+    turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [{ id: Date.now(), text: `🏠 BURDEL CHAOSU postawiony na (${targetR+1}, ${targetC+1})!`, type: 'action' }, ...state.combatLog],
     lastEvent: { type: 'brothel', r: targetR, c: targetC },
   };
@@ -743,7 +748,7 @@ export function executeQueenLaser(state, queenR, queenC) {
     board: newBoard,
     scores: newScores,
     activeAbility: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
+    turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [{ id: Date.now(), text: `⚡ POPIERDOLONY LASER KRÓLOWEJ ewaporował ${vaporized} wrogów!`, type: 'nuke' }, ...state.combatLog],
     screenShake: true,
     lastEvent: { type: 'strike', r: queenR, c: queenC },
@@ -766,7 +771,7 @@ export function executeQueenTeleport(state, queenR, queenC, targetR, targetC) {
     ...state,
     board: newBoard,
     activeAbility: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
+    turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [{ id: Date.now(), text: `✨ TELEPORTACJA KRÓLOWEJ na (${targetR+1}, ${targetC+1})!`, type: 'action' }, ...state.combatLog],
     lastEvent: { type: 'move', r: targetR, c: targetC },
   };
@@ -818,7 +823,7 @@ export function executeExtendBoardAbility(state, position = 'bottom') {
     board: newBoard,
     scores: newScores,
     activeAbility: null,
-    turn: state.turn === 'red' ? 'blue' : 'red', // CONSUMES TURN!
+    turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [{ id: Date.now(), text: `🗺️ POSZERZONO PLANSZĘ! Dodano nowy rząd z minami!`, type: 'extend' }, ...state.combatLog],
     lastEvent: { type: 'extend' },
   };
