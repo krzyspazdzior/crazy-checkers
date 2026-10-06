@@ -19,6 +19,7 @@ import {
   Globe,
   Copy,
   Check,
+  Lock,
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -44,7 +45,11 @@ export default function Sidebar({
   const [inputRoomCode, setInputRoomCode] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // Compute if it's currently the local player's turn
+  const isMyTurn = gameMode !== 'online' || !onlineRole || turn === onlineRole;
+
   const handleMiningClick = () => {
+    if (!isMyTurn) return;
     onChaosClick();
     setClickCount(prev => prev + 1);
   };
@@ -66,7 +71,7 @@ export default function Sidebar({
             CRAZY CHEKERS
           </h1>
           <p className="text-[11px] font-bold text-cyan-400 tracking-wider flex items-center justify-center gap-1 mt-0.5">
-            <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" /> TOTAL CHAOS EDITION <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" />
+            <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" /> MULTIPLAYER ONLINE EDITION <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" />
           </p>
         </div>
 
@@ -82,6 +87,17 @@ export default function Sidebar({
               TURA: {turn === 'red' ? '🔴 CZERWONY' : '🔵 NIEBIESKI'}
             </span>
           </div>
+
+          {gameMode === 'online' && (
+            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase border ${
+              isMyTurn
+                ? 'bg-emerald-950 border-emerald-500 text-emerald-300 animate-pulse'
+                : 'bg-rose-950 border-rose-800 text-rose-300'
+            }`}>
+              {isMyTurn ? '🟢 TWOJA TURA' : '🔒 CZEKAJ...'}
+            </span>
+          )}
+
           <div className="flex items-center gap-1 text-yellow-400 font-black text-base">
             <Zap className="w-4 h-4" />
             <span>{currentScore} $</span>
@@ -149,10 +165,15 @@ export default function Sidebar({
       {/* 2. Chaos Clicker Button */}
       <button
         onClick={handleMiningClick}
-        className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-xl font-black text-white text-xs uppercase tracking-wider flex items-center justify-between hover:brightness-110 shadow-[0_0_20px_rgba(0,255,204,0.3)] transition active:scale-98 border border-cyan-300/40 shrink-0"
+        disabled={!isMyTurn}
+        className={`w-full py-3.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-between transition active:scale-98 border shrink-0 ${
+          isMyTurn
+            ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-[0_0_20px_rgba(0,255,204,0.3)] hover:brightness-110 border-cyan-300/40'
+            : 'bg-slate-950 border-slate-800 text-slate-600 opacity-40 cursor-not-allowed'
+        }`}
       >
         <div className="flex items-center gap-2">
-          <MousePointerClick className="w-4 h-4 animate-bounce text-yellow-300" />
+          <MousePointerClick className={`w-4 h-4 ${isMyTurn ? 'animate-bounce text-yellow-300' : 'text-slate-600'}`} />
           <span>DOKLIKAJ GOTÓWKĘ (+1 $)</span>
         </div>
         <span className="px-2.5 py-0.5 rounded bg-black/40 text-xs font-bold text-yellow-300">
@@ -161,7 +182,7 @@ export default function Sidebar({
       </button>
 
       {/* 3. Pawn Shop Section */}
-      <div className="p-3 bg-slate-950/80 rounded-xl border border-yellow-600/30 flex flex-col gap-2 shrink-0">
+      <div className={`p-3 bg-slate-950/80 rounded-xl border flex flex-col gap-2 shrink-0 ${!isMyTurn ? 'opacity-40 pointer-events-none border-slate-800' : 'border-yellow-600/30'}`}>
         <div className="flex items-center justify-between text-xs font-black text-yellow-400 uppercase tracking-wider">
           <span className="flex items-center gap-1.5">
             <ShoppingCart className="w-4 h-4 text-yellow-400" /> SKLEP PIONKÓW
@@ -172,9 +193,9 @@ export default function Sidebar({
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => onBuyPawn('checker', 15)}
-            disabled={currentScore < 15}
+            disabled={!isMyTurn || currentScore < 15}
             className={`py-2 px-1.5 rounded-lg border font-black text-[11px] flex flex-col items-center justify-between gap-1 transition ${
-              currentScore >= 15
+              isMyTurn && currentScore >= 15
                 ? 'bg-rose-950/80 border-rose-600/60 text-rose-200 hover:bg-rose-900'
                 : 'bg-slate-900/60 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
             }`}
@@ -185,9 +206,9 @@ export default function Sidebar({
 
           <button
             onClick={() => onBuyPawn('golden_pawn', 30)}
-            disabled={currentScore < 30}
+            disabled={!isMyTurn || currentScore < 30}
             className={`py-2 px-1.5 rounded-lg border font-black text-[11px] flex flex-col items-center justify-between gap-1 transition ${
-              currentScore >= 30
+              isMyTurn && currentScore >= 30
                 ? 'bg-amber-950/80 border-amber-600/60 text-amber-200 hover:bg-amber-900'
                 : 'bg-slate-900/60 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
             }`}
@@ -198,9 +219,9 @@ export default function Sidebar({
 
           <button
             onClick={() => onBuyPawn('knight', 50)}
-            disabled={currentScore < 50}
+            disabled={!isMyTurn || currentScore < 50}
             className={`py-2 px-1.5 rounded-lg border font-black text-[11px] flex flex-col items-center justify-between gap-1 transition ${
-              currentScore >= 50
+              isMyTurn && currentScore >= 50
                 ? 'bg-purple-950/80 border-purple-600/60 text-purple-200 hover:bg-purple-900'
                 : 'bg-slate-900/60 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
             }`}
@@ -214,13 +235,18 @@ export default function Sidebar({
       {/* 4. CS:GO Case Button */}
       <button
         onClick={onOpenLootbox}
-        className="w-full py-3 px-4 bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 rounded-xl font-black text-slate-950 text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:brightness-110 shadow-[0_0_15px_rgba(255,230,0,0.3)] transition shrink-0 animate-pulse"
+        disabled={!isMyTurn}
+        className={`w-full py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition shrink-0 ${
+          isMyTurn
+            ? 'bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 text-slate-950 hover:brightness-110 shadow-[0_0_15px_rgba(255,230,0,0.3)] animate-pulse'
+            : 'bg-slate-950 border border-slate-800 text-slate-600 opacity-40 cursor-not-allowed'
+        }`}
       >
         <Gift className="w-4 h-4 text-slate-950" /> SKRZYNKA CS:GO (LOSUJ DROP!)
       </button>
 
       {/* 5. Arsenal Grid */}
-      <div className="flex flex-col gap-2 shrink-0">
+      <div className={`flex flex-col gap-2 shrink-0 ${!isMyTurn ? 'opacity-40 pointer-events-none' : ''}`}>
         <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
           <Flame className="w-3.5 h-3.5 text-rose-500" /> SUPER MOCE I AKCJE
         </h2>
@@ -228,7 +254,7 @@ export default function Sidebar({
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => onActivateAbility('nuke')}
-            disabled={currentInventory.nuke <= 0}
+            disabled={!isMyTurn || currentInventory.nuke <= 0}
             className={`flex items-center justify-between p-2.5 rounded-lg border font-black text-xs transition ${
               activeAbility === 'nuke'
                 ? 'bg-rose-900 border-rose-500 text-white shadow-[0_0_15px_#ff0055]'
@@ -245,7 +271,7 @@ export default function Sidebar({
 
           <button
             onClick={() => onActivateAbility('ufo')}
-            disabled={currentInventory.ufo <= 0}
+            disabled={!isMyTurn || currentInventory.ufo <= 0}
             className={`flex items-center justify-between p-2.5 rounded-lg border font-black text-xs transition ${
               activeAbility === 'ufo'
                 ? 'bg-cyan-900 border-cyan-400 text-white shadow-[0_0_15px_#00ffff]'
@@ -262,7 +288,7 @@ export default function Sidebar({
 
           <button
             onClick={() => onActivateAbility('strike')}
-            disabled={currentInventory.strike <= 0}
+            disabled={!isMyTurn || currentInventory.strike <= 0}
             className={`flex items-center justify-between p-2.5 rounded-lg border font-black text-xs transition ${
               activeAbility === 'strike'
                 ? 'bg-amber-900 border-amber-400 text-white shadow-[0_0_15px_#ffbb00]'
@@ -279,7 +305,7 @@ export default function Sidebar({
 
           <button
             onClick={() => onActivateAbility('shield')}
-            disabled={currentInventory.shield <= 0}
+            disabled={!isMyTurn || currentInventory.shield <= 0}
             className={`flex items-center justify-between p-2.5 rounded-lg border font-black text-xs transition ${
               activeAbility === 'shield'
                 ? 'bg-cyan-900 border-cyan-400 text-white shadow-[0_0_15px_#00ffff]'
@@ -296,7 +322,7 @@ export default function Sidebar({
 
           <button
             onClick={() => onActivateAbility('brothel')}
-            disabled={currentInventory.brothel <= 0}
+            disabled={!isMyTurn || currentInventory.brothel <= 0}
             className={`flex items-center justify-between p-2.5 rounded-lg border font-black text-xs transition ${
               activeAbility === 'brothel'
                 ? 'bg-pink-900 border-pink-400 text-white shadow-[0_0_15px_#ff007f]'
@@ -313,9 +339,9 @@ export default function Sidebar({
 
           <button
             onClick={onExtendBoard}
-            disabled={currentScore < 100}
+            disabled={!isMyTurn || currentScore < 100}
             className={`flex items-center justify-between p-2.5 rounded-lg border font-black text-xs transition ${
-              currentScore >= 100
+              isMyTurn && currentScore >= 100
                 ? 'bg-purple-950/80 border-purple-500/80 text-purple-200 hover:bg-purple-900'
                 : 'bg-slate-950/40 border-slate-800 text-slate-600 opacity-50'
             }`}
