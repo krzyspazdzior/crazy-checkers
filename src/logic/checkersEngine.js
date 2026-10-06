@@ -1,4 +1,4 @@
-// "POPIERDOLONE WARCABY: TOTALNY CHAOS" - Engine with Pawn Store & Chaos Clicker
+// "POPIERDOLONE WARCABY: TOTALNY CHAOS" - Engine with Doomsday White Demon & Online Room Sync
 
 export const INITIAL_ROWS = 8;
 export const INITIAL_COLS = 8;
@@ -57,7 +57,7 @@ export function createInitialState() {
     cols: INITIAL_COLS,
     board: createInitialBoard(INITIAL_ROWS, INITIAL_COLS),
     turn: 'blue',
-    scores: { red: 60, blue: 60 }, // Start with 60 $ PKT
+    scores: { red: 60, blue: 60 },
     inventory: {
       red: { nuke: 1, ufo: 2, strike: 2, shield: 2, brothel: 1 },
       blue: { nuke: 1, ufo: 2, strike: 2, shield: 2, brothel: 1 },
@@ -67,12 +67,16 @@ export function createInitialState() {
     selectedTile: null,
     validMoves: [],
     comboPiece: null,
-    gameMode: 'pvp',
+    gameMode: 'pvp', // 'pvp', 'ai', 'online'
+    onlineRole: null, // 'blue' (host) or 'red' (guest)
+    roomId: null,
     winner: null,
     combatLog: [
-      { id: Date.now(), text: '🔥 WARCABY CLICKER & PAWN STORE READY!', type: 'system' }
+      { id: Date.now(), text: '🔥 POPIERDOLONE WARCABY ONLINE & DOOMSDAY READY!', type: 'system' }
     ],
     screenShake: false,
+    isWhiteScreenActive: false,
+    isBoardSplit: false,
     lastEvent: null,
     isLootboxOpen: false,
   };
@@ -87,7 +91,46 @@ export function cloneBoard(board) {
   );
 }
 
-// Clicker Cash Income
+// DOOMSDAY RED ATOMIC BUTTON: WHITE DEMON SCREAMER & BOARD SPLIT IN HALF!
+export function executeDoomsdayWhiteDemon(state) {
+  const newBoard = cloneBoard(state.board);
+  const player = state.turn;
+  let piecesToAnnihilate = [];
+
+  newBoard.forEach(row => {
+    row.forEach(tile => {
+      if (tile.piece && tile.piece.isInvincible === 0) {
+        piecesToAnnihilate.push(tile);
+      }
+    });
+  });
+
+  // Destroy 80% of units
+  const destroyCount = Math.floor(piecesToAnnihilate.length * 0.8);
+  for (let i = 0; i < destroyCount; i++) {
+    if (piecesToAnnihilate.length > 0) {
+      const randIdx = Math.floor(Math.random() * piecesToAnnihilate.length);
+      piecesToAnnihilate[randIdx].piece = null;
+      piecesToAnnihilate.splice(randIdx, 1);
+    }
+  }
+
+  return {
+    ...state,
+    board: newBoard,
+    screenShake: true,
+    isWhiteScreenActive: true,
+    isBoardSplit: true,
+    activeAbility: null,
+    turn: state.turn === 'red' ? 'blue' : 'red',
+    combatLog: [
+      { id: Date.now(), text: `🚨 APOKALIPSA! CZERWONY GUZIK DOOMSDAY PRZYZWAŁ BIAŁEGO DEMONA! PLANSZA PĘKŁA W PÓŁ!`, type: 'nuke' },
+      ...state.combatLog,
+    ],
+    lastEvent: { type: 'demon_doomsday' },
+  };
+}
+
 export function addClickerCash(state, amount = 1) {
   const player = state.turn;
   const newScores = {
@@ -343,7 +386,7 @@ export function executeMove(state, move) {
     movingPiece.isKing = true;
     promoted = true;
     pointsEarned += 50;
-    eventText = `👑 ${movingPiece.player === 'red' ? 'Czerwony' : 'Niebieski'} awansuje na KRÓLOWĄ/DAMKĘ Z POPIERDOLONYMI MOCAMI (+50 $ PKT)!`;
+    eventText = `👑 ${movingPiece.player === 'red' ? 'Czerwony' : 'Niebieski'} awansuje na KRÓLOWĄ/DAMKĘ (+50 $ PKT)!`;
   }
 
   const landingTile = newBoard[toR][toC];
@@ -421,7 +464,6 @@ function decrementTurnStatuses(board) {
   });
 }
 
-// Buy Pawn Action from Shop
 export function buyPawnFromShop(state, pawnType, cost) {
   const player = state.turn;
   if (state.scores[player] < cost) return state;
@@ -443,7 +485,7 @@ export function buyPawnFromShop(state, pawnType, cost) {
     activeAbility: 'place_unit',
     pendingSpawnUnit: { id: pawnType, name: unitNames[pawnType] || 'PIONEK' },
     combatLog: [
-      { id: Date.now(), text: `🛒 KUPIONO ${unitNames[pawnType]} (-${cost} $ PKT)! KLIKNIJ POLE NA PLANSZY, ABY GO POSTAWIĆ!`, type: 'action' },
+      { id: Date.now(), text: `🛒 KUPIONO ${unitNames[pawnType]} (-${cost} $ PKT)!`, type: 'action' },
       ...state.combatLog,
     ],
   };
@@ -471,7 +513,7 @@ export function executeShieldAbility(state, targetR, targetC) {
     inventory: newInventory,
     activeAbility: null,
     turn: state.turn === 'red' ? 'blue' : 'red',
-    combatLog: [{ id: Date.now(), text: `🛡️ TARCZA NIEZNISZCZALNOŚCI nałożona na Twoją figurę na 3 tury!`, type: 'action' }, ...state.combatLog],
+    combatLog: [{ id: Date.now(), text: `🛡️ TARCZA NIEZNISZCZALNOŚCI nałożona na Twoją figurę!`, type: 'action' }, ...state.combatLog],
     lastEvent: { type: 'shield', r: targetR, c: targetC },
   };
 }
@@ -778,22 +820,7 @@ export function executeExtendBoardAbility(state, position = 'bottom') {
   };
 }
 
-// WIN CONDITION FIX: Don't lose if you can click cash or buy pawns!
 export function checkWinCondition(board, rows, cols, scores = { red: 0, blue: 0 }) {
-  let redCount = 0;
-  let blueCount = 0;
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (board[r][c].piece) {
-        if (board[r][c].piece.player === 'red') redCount++;
-        if (board[r][c].piece.player === 'blue') blueCount++;
-      }
-    }
-  }
-
-  // Players can always click the Chaos Clicker to earn cash & buy a pawn if they have 0 pieces!
-  // So game only ends if a player gives up or no dark tiles left!
   return null;
 }
 
@@ -802,7 +829,6 @@ export function makeAIMove(state) {
 
   const legal = getLegalMovesForPlayer(state.board, 'red', state.rows, state.cols, state.comboPiece);
   if (legal.moves.length === 0) {
-    // If AI has no pieces, buy a pawn!
     if (state.scores.red >= 15) {
       return buyPawnFromShop(state, 'checker', 15);
     }

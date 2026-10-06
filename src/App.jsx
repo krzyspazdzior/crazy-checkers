@@ -16,12 +16,14 @@ import {
   executeQueenTeleport,
   executePlaceSpawnedUnit,
   executeExtendBoardAbility,
+  executeDoomsdayWhiteDemon,
   addClickerCash,
   buyPawnFromShop,
   checkWinCondition,
   makeAIMove,
 } from './logic/checkersEngine';
 import { soundEngine } from './utils/audio';
+import { peerService } from './utils/peerService';
 import confetti from 'canvas-confetti';
 import { Trophy, RefreshCw } from 'lucide-react';
 
@@ -30,8 +32,11 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [lastEventPos, setLastEventPos] = useState(null);
   const [isLootboxOpen, setIsLootboxOpen] = useState(false);
+  const [onlineRoomCode, setOnlineRoomCode] = useState(null);
+  const [peerStatus, setPeerStatus] = useState('');
   const boardRef = useRef(null);
 
+  // Trigger sound & particle FX on lastEvent
   useEffect(() => {
     if (!state.lastEvent) return;
     const { type, r, c, promoted } = state.lastEvent;
@@ -46,7 +51,14 @@ export default function App() {
       setLastEventPos({ type, x: eventX, y: eventY });
     }
 
-    if (type === 'nuke') soundEngine.playNuke();
+    if (type === 'demon_doomsday') {
+      soundEngine.playDemonRoar();
+      // Remove white screen flash overlay after 2.5 seconds
+      const whiteTimer = setTimeout(() => {
+        setState(prev => ({ ...prev, isWhiteScreenActive: false }));
+      }, 2500);
+      return () => clearTimeout(whiteTimer);
+    } else if (type === 'nuke') soundEngine.playNuke();
     else if (type === 'ufo') soundEngine.playUFO();
     else if (type === 'strike') soundEngine.playRocket();
     else if (type === 'mine') soundEngine.playMine();
@@ -61,7 +73,7 @@ export default function App() {
     if (state.screenShake) {
       const timer = setTimeout(() => {
         setState(prev => ({ ...prev, screenShake: false }));
-      }, 500);
+      }, 600);
       return () => clearTimeout(timer);
     }
   }, [state.lastEvent]);
@@ -78,8 +90,29 @@ export default function App() {
     }
   }, [state.turn, state.gameMode, state.winner]);
 
+  // Broadcast state changes in online mode
+  const syncStateOnline = newState => {
+    if (state.gameMode === 'online') {
+      peerService.sendData({ type: 'STATE_UPDATE', payload: newState });
+    }
+  };
+
+  // RED DOOMSDAY BUTTON TRIGGER
+  const handleTriggerDoomsday = () => {
+    soundEngine.playClick();
+    const newState = executeDoomsdayWhiteDemon(state);
+    setState(newState);
+    syncStateOnline(newState);
+  };
+
+  // Tile Clicks
   const handleTileClick = (r, c) => {
     if (state.winner) return;
+
+    // Check online turn enforcement
+    if (state.gameMode === 'online' && state.onlineRole && state.turn !== state.onlineRole) {
+      return;
+    }
     if (state.gameMode === 'ai' && state.turn === 'red') return;
 
     soundEngine.playClick();
@@ -89,6 +122,7 @@ export default function App() {
       const newState = executeMove(state, matchingMove);
       const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
       setState({ ...newState, winner });
+      syncStateOnline({ ...newState, winner });
 
       if (winner) {
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
@@ -137,41 +171,43 @@ export default function App() {
 
   const handleAbilityTargetTile = (r, c) => {
     if (!state.activeAbility) return;
+    if (state.gameMode === 'online' && state.onlineRole && state.turn !== state.onlineRole) return;
 
+    let newState = state;
     if (state.activeAbility === 'place_unit') {
-      const newState = executePlaceSpawnedUnit(state, r, c);
-      const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
-      setState({ ...newState, winner });
+      newState = executePlaceSpawnedUnit(state, r, c);
     } else if (state.activeAbility === 'nuke') {
-      const newState = executeNukeAbility(state, r, c);
-      const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
-      setState({ ...newState, winner });
+      newState = executeNukeAbility(state, r, c);
     } else if (state.activeAbility === 'ufo') {
-      const newState = executeUFOAbility(state, r, c);
-      const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
-      setState({ ...newState, winner });
+      newState = executeUFOAbility(state, r, c);
     } else if (state.activeAbility === 'shield') {
-      const newState = executeShieldAbility(state, r, c);
-      const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
-      setState({ ...newState, winner });
+      newState = executeShieldAbility(state, r, c);
     } else if (state.activeAbility === 'brothel') {
-      const newState = executeBrothelAbility(state, r, c);
-      const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
-      setState({ ...newState, winner });
+      newState = executeBrothelAbility(state, r, c);
     }
+
+    const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
+    setState({ ...newState, winner });
+    syncStateOnline({ ...newState, winner });
   };
 
   const handleStrikeTargetLine = (r, c) => {
     if (state.activeAbility !== 'strike') return;
+    if (state.gameMode === 'online' && state.onlineRole && state.turn !== state.onlineRole) return;
+
     const newState = executeStrikeAbility(state, true, r);
     const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
     setState({ ...newState, winner });
+    syncStateOnline({ ...newState, winner });
   };
 
   const handleQueenLaser = (r, c) => {
+    if (state.gameMode === 'online' && state.onlineRole && state.turn !== state.onlineRole) return;
+
     const newState = executeQueenLaser(state, r, c);
     const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
     setState({ ...newState, winner });
+    syncStateOnline({ ...newState, winner });
   };
 
   const handleQueenTeleport = (r, c) => {
@@ -183,19 +219,27 @@ export default function App() {
 
   const handleExtendBoard = () => {
     soundEngine.playClick();
+    if (state.gameMode === 'online' && state.onlineRole && state.turn !== state.onlineRole) return;
+
     const newState = executeExtendBoardAbility(state, 'bottom');
     const winner = checkWinCondition(newState.board, newState.rows, newState.cols, newState.scores);
     setState({ ...newState, winner });
+    syncStateOnline({ ...newState, winner });
   };
 
   const handleChaosClick = () => {
     soundEngine.playClick();
-    setState(prev => addClickerCash(prev, 1));
+    const newState = addClickerCash(state, 1);
+    setState(newState);
+    syncStateOnline(newState);
   };
 
   const handleBuyPawn = (type, cost) => {
     soundEngine.playClick();
-    setState(prev => buyPawnFromShop(prev, type, cost));
+    if (state.gameMode === 'online' && state.onlineRole && state.turn !== state.onlineRole) return;
+
+    const newState = buyPawnFromShop(state, type, cost);
+    setState(newState);
   };
 
   const handleWinLootReward = rewardItem => {
@@ -210,16 +254,72 @@ export default function App() {
     }));
   };
 
+  // ONLINE WEBRTC MULTIPLAYER
+  const handleCreateOnlineRoom = () => {
+    soundEngine.playClick();
+    setPeerStatus('TWORZENIE POKOJU...');
+    const roomId = peerService.createRoom(
+      info => {
+        setOnlineRoomCode(info.roomId);
+        if (info.isGuestConnected) {
+          setPeerStatus('🔴 GRACZ 2 DOŁĄCZYŁ!');
+        } else {
+          setPeerStatus('🟡 OCZEKIWANIE NA GRACZA 2...');
+        }
+        setState(prev => ({
+          ...prev,
+          gameMode: 'online',
+          onlineRole: 'blue', // Host is Blue
+          roomId: info.roomId,
+        }));
+      },
+      data => {
+        if (data.type === 'STATE_UPDATE') {
+          setState(prev => ({ ...data.payload, gameMode: 'online', onlineRole: 'blue' }));
+        }
+      },
+      err => setPeerStatus('❌ BŁĄD PEER')
+    );
+  };
+
+  const handleJoinOnlineRoom = code => {
+    soundEngine.playClick();
+    setPeerStatus('ŁĄCZENIE...');
+    peerService.joinRoom(
+      code,
+      info => {
+        setOnlineRoomCode(info.roomId);
+        setPeerStatus('🟢 POŁĄCZONO Z HOSTEM!');
+        setState(prev => ({
+          ...prev,
+          gameMode: 'online',
+          onlineRole: 'red', // Guest is Red
+          roomId: info.roomId,
+        }));
+      },
+      data => {
+        if (data.type === 'STATE_UPDATE') {
+          setState(prev => ({ ...data.payload, gameMode: 'online', onlineRole: 'red' }));
+        }
+      },
+      err => setPeerStatus('❌ NIE ZNALEZIONO POKOJU')
+    );
+  };
+
   const handleToggleMute = () => {
     const muted = soundEngine.toggleMute();
     setIsMuted(muted);
   };
 
-  const handleToggleGameMode = () => {
+  const handleToggleGameMode = mode => {
     soundEngine.playClick();
-    const newMode = state.gameMode === 'pvp' ? 'ai' : 'pvp';
+    if (state.gameMode === 'online') {
+      peerService.disconnect();
+      setOnlineRoomCode(null);
+      setPeerStatus('');
+    }
     const reset = createInitialState();
-    reset.gameMode = newMode;
+    reset.gameMode = mode;
     setState(reset);
   };
 
@@ -227,7 +327,10 @@ export default function App() {
     soundEngine.playClick();
     const reset = createInitialState();
     reset.gameMode = state.gameMode;
+    reset.onlineRole = state.onlineRole;
+    reset.roomId = state.roomId;
     setState(reset);
+    syncStateOnline(reset);
   };
 
   return (
@@ -243,6 +346,7 @@ export default function App() {
           onStrikeTargetLine={handleStrikeTargetLine}
           onQueenLaser={handleQueenLaser}
           onQueenTeleport={handleQueenTeleport}
+          onTriggerDoomsday={handleTriggerDoomsday}
           boardRef={boardRef}
         />
         {boardRef.current && (
@@ -265,6 +369,10 @@ export default function App() {
         onToggleMute={handleToggleMute}
         isMuted={isMuted}
         onToggleGameMode={handleToggleGameMode}
+        onCreateOnlineRoom={handleCreateOnlineRoom}
+        onJoinOnlineRoom={handleJoinOnlineRoom}
+        onlineRoomCode={onlineRoomCode}
+        peerStatus={peerStatus}
         onResetGame={handleResetGame}
       />
 

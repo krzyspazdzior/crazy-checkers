@@ -16,6 +16,9 @@ import {
   Gift,
   ShoppingCart,
   MousePointerClick,
+  Globe,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -28,16 +31,30 @@ export default function Sidebar({
   onToggleMute,
   isMuted,
   onToggleGameMode,
+  onCreateOnlineRoom,
+  onJoinOnlineRoom,
+  onlineRoomCode,
+  peerStatus,
   onResetGame,
 }) {
-  const { turn, scores, inventory, activeAbility, gameMode, combatLog } = state;
+  const { turn, scores, inventory, activeAbility, gameMode, combatLog, onlineRole } = state;
   const currentInventory = inventory[turn] || {};
   const currentScore = scores[turn] || 0;
   const [clickCount, setClickCount] = useState(0);
+  const [inputRoomCode, setInputRoomCode] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const handleMiningClick = () => {
     onChaosClick();
     setClickCount(prev => prev + 1);
+  };
+
+  const copyRoomCode = () => {
+    if (onlineRoomCode) {
+      navigator.clipboard.writeText(onlineRoomCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -49,7 +66,7 @@ export default function Sidebar({
             POPIERDOLONE WARCABY
           </h1>
           <p className="text-[11px] font-bold text-cyan-400 tracking-wider flex items-center justify-center gap-1 mt-0.5">
-            <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" /> ARSENAŁ CHAOSU <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" />
+            <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" /> ONLINE VERCEL EDITION <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" />
           </p>
         </div>
 
@@ -71,6 +88,63 @@ export default function Sidebar({
           </div>
         </div>
       </div>
+
+      {/* ONLINE MULTIPLAYER ROOM CODE PANEL */}
+      {gameMode === 'online' && (
+        <div className="p-3 bg-slate-950/90 border-2 border-cyan-500/60 rounded-xl flex flex-col gap-2 shrink-0 animate-fade-in">
+          <div className="flex items-center justify-between text-xs font-black text-cyan-400 uppercase tracking-wider">
+            <span className="flex items-center gap-1.5">
+              <Globe className="w-4 h-4 text-cyan-400" /> MULTIPLAYER ONLINE (WEBRTC)
+            </span>
+            <span className="text-[10px] text-emerald-400">{peerStatus || 'GOTOWY'}</span>
+          </div>
+
+          {!onlineRoomCode ? (
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={onCreateOnlineRoom}
+                className="w-full py-2 px-3 bg-gradient-to-r from-cyan-600 to-blue-600 font-black text-xs uppercase tracking-wider text-white rounded-lg hover:brightness-110 shadow-md transition"
+              >
+                ➕ STWÓRZ POKÓJ (CREATE ROOM)
+              </button>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="KOD POKOJU (np. CHAOS-982)"
+                  value={inputRoomCode}
+                  onChange={e => setInputRoomCode(e.target.value.toUpperCase())}
+                  className="flex-1 py-1.5 px-2 bg-slate-900 border border-slate-700 rounded-lg text-xs uppercase font-mono text-cyan-300 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                />
+                <button
+                  onClick={() => onJoinOnlineRoom(inputRoomCode)}
+                  disabled={!inputRoomCode.trim()}
+                  className="py-1.5 px-3 bg-emerald-600 disabled:opacity-50 text-white font-black text-xs uppercase rounded-lg hover:bg-emerald-500 transition"
+                >
+                  DOŁĄCZ
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between p-2 bg-slate-900 rounded-lg border border-cyan-500/40">
+                <div className="text-xs font-mono font-bold text-cyan-300 tracking-widest">
+                  {onlineRoomCode}
+                </div>
+                <button
+                  onClick={copyRoomCode}
+                  className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs flex items-center gap-1 font-bold"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'SKOPIOWANO!' : 'KOPIUJ'}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                Grasz jako: <span className="font-bold text-yellow-300">{onlineRole === 'blue' ? '🔵 NIEBIESKI (HOST)' : '🔴 CZERWONY (GUEST)'}</span>
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 2. Chaos Clicker Button */}
       <button
@@ -152,7 +226,6 @@ export default function Sidebar({
         </h2>
 
         <div className="grid grid-cols-2 gap-2">
-          {/* Nuke */}
           <button
             onClick={() => onActivateAbility('nuke')}
             disabled={currentInventory.nuke <= 0}
@@ -170,7 +243,6 @@ export default function Sidebar({
             <span className="px-1.5 py-0.5 bg-rose-950 rounded text-[10px]">{currentInventory.nuke}x</span>
           </button>
 
-          {/* UFO */}
           <button
             onClick={() => onActivateAbility('ufo')}
             disabled={currentInventory.ufo <= 0}
@@ -188,7 +260,6 @@ export default function Sidebar({
             <span className="px-1.5 py-0.5 bg-cyan-950 rounded text-[10px]">{currentInventory.ufo}x</span>
           </button>
 
-          {/* Rocket */}
           <button
             onClick={() => onActivateAbility('strike')}
             disabled={currentInventory.strike <= 0}
@@ -206,7 +277,6 @@ export default function Sidebar({
             <span className="px-1.5 py-0.5 bg-amber-950 rounded text-[10px]">{currentInventory.strike}x</span>
           </button>
 
-          {/* Shield */}
           <button
             onClick={() => onActivateAbility('shield')}
             disabled={currentInventory.shield <= 0}
@@ -224,7 +294,6 @@ export default function Sidebar({
             <span className="px-1.5 py-0.5 bg-cyan-950 rounded text-[10px]">{currentInventory.shield}x</span>
           </button>
 
-          {/* Brothel */}
           <button
             onClick={() => onActivateAbility('brothel')}
             disabled={currentInventory.brothel <= 0}
@@ -242,7 +311,6 @@ export default function Sidebar({
             <span className="px-1.5 py-0.5 bg-pink-950 rounded text-[10px]">{currentInventory.brothel}x</span>
           </button>
 
-          {/* Extend Board */}
           <button
             onClick={onExtendBoard}
             disabled={currentScore < 100}
@@ -261,7 +329,7 @@ export default function Sidebar({
       </div>
 
       {/* 6. Combat Log */}
-      <div className="flex-1 flex flex-col min-h-[100px] p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 overflow-hidden shrink-0">
+      <div className="flex-1 flex flex-col min-h-[90px] p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 overflow-hidden shrink-0">
         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
           📜 DZIENNIK CHAOSU
         </h3>
@@ -277,36 +345,60 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* 7. Footer Controls */}
-      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800 shrink-0">
-        <button
-          onClick={onToggleGameMode}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 hover:bg-slate-700 transition"
-        >
-          {gameMode === 'pvp' ? (
-            <>
-              <Users className="w-4 h-4 text-cyan-400" /> 2 Graczy (2P)
-            </>
-          ) : (
-            <>
-              <Bot className="w-4 h-4 text-rose-400" /> vs Chaos AI
-            </>
-          )}
-        </button>
+      {/* 7. Footer Controls & Mode Selector */}
+      <div className="flex flex-col gap-2 pt-2 border-t border-slate-800 shrink-0">
+        <div className="grid grid-cols-3 gap-1">
+          <button
+            onClick={() => onToggleGameMode('pvp')}
+            className={`py-1.5 px-1 rounded-lg border text-[10px] font-extrabold flex items-center justify-center gap-1 transition ${
+              gameMode === 'pvp'
+                ? 'bg-cyan-900 border-cyan-400 text-white'
+                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            <Users className="w-3 h-3 text-cyan-400" /> 2P Lokalnie
+          </button>
 
-        <button
-          onClick={onToggleMute}
-          className="p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition"
-        >
-          {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
-        </button>
+          <button
+            onClick={() => onToggleGameMode('ai')}
+            className={`py-1.5 px-1 rounded-lg border text-[10px] font-extrabold flex items-center justify-center gap-1 transition ${
+              gameMode === 'ai'
+                ? 'bg-rose-900 border-rose-400 text-white'
+                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            <Bot className="w-3 h-3 text-rose-400" /> vs AI
+          </button>
 
-        <button
-          onClick={onResetGame}
-          className="p-2.5 rounded-lg bg-rose-950/60 border border-rose-800/60 text-rose-300 hover:bg-rose-900 transition"
-        >
-          <RotateCcw className="w-4 h-4" />
-        </button>
+          <button
+            onClick={() => onToggleGameMode('online')}
+            className={`py-1.5 px-1 rounded-lg border text-[10px] font-extrabold flex items-center justify-center gap-1 transition ${
+              gameMode === 'online'
+                ? 'bg-emerald-900 border-emerald-400 text-white animate-pulse'
+                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            <Globe className="w-3 h-3 text-emerald-400" /> ONLINE
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={onToggleMute}
+            className="flex-1 py-1.5 px-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 transition flex items-center justify-center gap-1.5 text-xs font-bold"
+          >
+            {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
+            {isMuted ? 'WYCISZONY' : 'DŹWIĘK WŁ.'}
+          </button>
+
+          <button
+            onClick={onResetGame}
+            className="p-2 rounded-lg bg-rose-950/60 border border-rose-800/60 text-rose-300 hover:bg-rose-900 transition"
+            title="Resetuj grę"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
