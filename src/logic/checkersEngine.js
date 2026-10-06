@@ -1,4 +1,4 @@
-// "POPIERDOLONE WARCABY: TOTALNY CHAOS" - Engine with Doomsday White Demon & Online Room Sync
+// "Crazy Chekers" - Core Engine with Rebalanced 1-Use Doomsday Button
 
 export const INITIAL_ROWS = 8;
 export const INITIAL_COLS = 8;
@@ -67,16 +67,17 @@ export function createInitialState() {
     selectedTile: null,
     validMoves: [],
     comboPiece: null,
-    gameMode: 'pvp', // 'pvp', 'ai', 'online'
-    onlineRole: null, // 'blue' (host) or 'red' (guest)
+    gameMode: 'pvp',
+    onlineRole: null,
     roomId: null,
     winner: null,
     combatLog: [
-      { id: Date.now(), text: '🔥 POPIERDOLONE WARCABY ONLINE & DOOMSDAY READY!', type: 'system' }
+      { id: Date.now(), text: '🔥 CRAZY CHEKERS READY!', type: 'system' }
     ],
     screenShake: false,
     isWhiteScreenActive: false,
     isBoardSplit: false,
+    isDoomsdayUsed: false, // LIMIT 1 USE PER GAME TOTAL!
     lastEvent: null,
     isLootboxOpen: false,
   };
@@ -91,8 +92,10 @@ export function cloneBoard(board) {
   );
 }
 
-// DOOMSDAY RED ATOMIC BUTTON: WHITE DEMON SCREAMER & BOARD SPLIT IN HALF!
+// RED DOOMSDAY BUTTON: 1-USE PER GAME, REBALANCED 45% DESTRUCTION
 export function executeDoomsdayWhiteDemon(state) {
+  if (state.isDoomsdayUsed) return state; // Only 1 use per game total!
+
   const newBoard = cloneBoard(state.board);
   const player = state.turn;
   let piecesToAnnihilate = [];
@@ -105,8 +108,8 @@ export function executeDoomsdayWhiteDemon(state) {
     });
   });
 
-  // Destroy 80% of units
-  const destroyCount = Math.floor(piecesToAnnihilate.length * 0.8);
+  // Rebalanced: Destroy 45% of units
+  const destroyCount = Math.floor(piecesToAnnihilate.length * 0.45);
   for (let i = 0; i < destroyCount; i++) {
     if (piecesToAnnihilate.length > 0) {
       const randIdx = Math.floor(Math.random() * piecesToAnnihilate.length);
@@ -121,10 +124,11 @@ export function executeDoomsdayWhiteDemon(state) {
     screenShake: true,
     isWhiteScreenActive: true,
     isBoardSplit: true,
+    isDoomsdayUsed: true, // Mark as used for whole game
     activeAbility: null,
     turn: state.turn === 'red' ? 'blue' : 'red',
     combatLog: [
-      { id: Date.now(), text: `🚨 APOKALIPSA! CZERWONY GUZIK DOOMSDAY PRZYZWAŁ BIAŁEGO DEMONA! PLANSZA PĘKŁA W PÓŁ!`, type: 'nuke' },
+      { id: Date.now(), text: `🚨 APOKALIPSA! ${player === 'red' ? '🔴 CZERWONY' : '🔵 NIEBIESKI'} UŻYŁ JEDYNEGO GUZIKA DOOMSDAY!`, type: 'nuke' },
       ...state.combatLog,
     ],
     lastEvent: { type: 'demon_doomsday' },

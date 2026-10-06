@@ -58,15 +58,15 @@ export default function Sidebar({
   };
 
   return (
-    <div className="w-[380px] shrink-0 h-screen max-h-screen border-l border-slate-800 bg-slate-900/95 flex flex-col justify-between p-4 shadow-2xl backdrop-blur-xl z-30 overflow-y-auto gap-3">
+    <div className="w-[380px] shrink-0 h-screen max-h-screen border-l border-slate-800 bg-slate-900/95 flex flex-col justify-between p-4 shadow-2xl backdrop-blur-xl z-30 overflow-y-auto gap-3 font-sans">
       {/* 1. Header Section */}
       <div className="flex flex-col gap-2 shrink-0">
         <div className="text-center pb-2 border-b border-slate-800/80">
-          <h1 className="text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-yellow-400 to-cyan-400 animate-pulse uppercase">
-            POPIERDOLONE WARCABY
+          <h1 className="text-3xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-yellow-400 to-cyan-400 animate-pulse uppercase">
+            CRAZY CHEKERS
           </h1>
           <p className="text-[11px] font-bold text-cyan-400 tracking-wider flex items-center justify-center gap-1 mt-0.5">
-            <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" /> ONLINE VERCEL EDITION <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" />
+            <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" /> TOTAL CHAOS EDITION <Flame className="w-3.5 h-3.5 text-yellow-400 animate-bounce" />
           </p>
         </div>
 
@@ -149,7 +149,7 @@ export default function Sidebar({
       {/* 2. Chaos Clicker Button */}
       <button
         onClick={handleMiningClick}
-        className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-xl font-black text-white text-xs uppercase tracking-wider flex items-center justify-between hover:brightness-110 shadow-[0_0_20px_rgba(0,255,204,0.3)] transition active:scale-98 border border-cyan-300/40 shrink-0"
+        className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-xl font-black text-white text-xs uppercase tracking-wider flex items-center justify-between hover:brightness-110 shadow-[0_0_20px_rgba(0,255,204,0.3)] transition active:scale-98 border border-cyan-300/40 shrink-0"
       >
         <div className="flex items-center gap-2">
           <MousePointerClick className="w-4 h-4 animate-bounce text-yellow-300" />
@@ -329,7 +329,7 @@ export default function Sidebar({
       </div>
 
       {/* 6. Combat Log */}
-      <div className="flex-1 flex flex-col min-h-[90px] p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 overflow-hidden shrink-0">
+      <div className="flex-1 flex flex-col min-h-[100px] p-2.5 bg-slate-950/90 rounded-xl border border-slate-800 overflow-hidden shrink-0">
         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
           📜 DZIENNIK CHAOSU
         </h3>

@@ -11,7 +11,7 @@ export default function GameBoard({
   onTriggerDoomsday,
   boardRef,
 }) {
-  const { rows, cols, board, selectedTile, validMoves, activeAbility, pendingSpawnUnit, turn, isWhiteScreenActive, isBoardSplit } = state;
+  const { rows, cols, board, selectedTile, validMoves, activeAbility, pendingSpawnUnit, turn, isWhiteScreenActive, isBoardSplit, isDoomsdayUsed } = state;
   const [hoveredTile, setHoveredTile] = useState(null);
 
   const isTileValidMove = (r, c) => {
@@ -33,26 +33,35 @@ export default function GameBoard({
 
   return (
     <div className="relative flex items-center justify-center gap-6">
-      {/* 🔴 RED DOOMSDAY ATOMIC BUTTON ON THE LEFT OF THE BOARD */}
+      {/* 🔴 RED DOOMSDAY ATOMIC BUTTON (LIMIT: 1 PER GAME TOTAL!) */}
       <div className="flex flex-col items-center gap-2">
         <button
           onClick={onTriggerDoomsday}
-          className="group relative flex flex-col items-center justify-center w-24 h-48 bg-gradient-to-b from-red-600 via-rose-700 to-red-950 border-4 border-yellow-400 rounded-3xl shadow-[0_0_40px_#ff0000] hover:scale-105 active:scale-95 transition-all duration-200 overflow-hidden cursor-pointer animate-pulse"
+          disabled={isDoomsdayUsed}
+          className={`group relative flex flex-col items-center justify-center w-24 h-48 rounded-3xl border-4 transition-all duration-200 overflow-hidden ${
+            !isDoomsdayUsed
+              ? 'bg-gradient-to-b from-red-600 via-rose-700 to-red-950 border-yellow-400 shadow-[0_0_40px_rgba(255,0,0,0.8)] hover:scale-105 active:scale-95 cursor-pointer animate-pulse'
+              : 'bg-slate-900 border-slate-800 opacity-40 cursor-not-allowed shadow-none'
+          }`}
         >
           {/* Warning hazard stripes background */}
           <div className="absolute inset-0 bg-[linear-gradient(45deg,#000_25%,transparent_25%,transparent_50%,#000_50%,#000_75%,transparent_75%,transparent)] bg-[size:16px_16px] opacity-20 pointer-events-none" />
           
           {/* Pulsing inner button core */}
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-red-900 border-4 border-yellow-300 shadow-[0_0_25px_#ff0000] flex items-center justify-center animate-ping">
-            <AlertTriangle className="w-8 h-8 text-yellow-300" />
+          <div className={`w-16 h-16 rounded-full border-4 flex items-center justify-center ${
+            !isDoomsdayUsed
+              ? 'bg-gradient-to-br from-red-500 to-red-900 border-yellow-300 shadow-[0_0_25px_#ff0000] animate-ping'
+              : 'bg-slate-800 border-slate-700'
+          }`}>
+            <AlertTriangle className={`w-8 h-8 ${!isDoomsdayUsed ? 'text-yellow-300' : 'text-slate-600'}`} />
           </div>
 
           <div className="mt-3 text-center px-1">
-            <span className="text-[11px] font-black text-yellow-300 uppercase tracking-widest leading-none block drop-shadow">
+            <span className={`text-[11px] font-black uppercase tracking-widest leading-none block drop-shadow ${!isDoomsdayUsed ? 'text-yellow-300' : 'text-slate-500'}`}>
               DOOMSDAY
             </span>
-            <span className="text-[9px] font-extrabold text-white uppercase block mt-1">
-              NIE DOTYKAĆ!
+            <span className={`text-[9px] font-extrabold uppercase block mt-1 ${!isDoomsdayUsed ? 'text-white' : 'text-slate-600'}`}>
+              {!isDoomsdayUsed ? '1x PER GAME!' : 'UŻYTY (0x)'}
             </span>
           </div>
         </button>
@@ -100,27 +109,26 @@ export default function GameBoard({
           </div>
         )}
 
-        {/* 👻 WHITE DEMON SCREAMER & WHITE SCREEN OVERLAY */}
+        {/* 👻 WHITE DEMON SCREAMER & WHITE FLASH OVERLAY (Auto-disappears after 1.8s!) */}
         {isWhiteScreenActive && (
-          <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-xl flex flex-col items-center justify-center animate-pulse rounded-3xl overflow-hidden shadow-[0_0_100px_#ffffff]">
-            {/* Terrifying White Demon Screamer Icon */}
+          <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-xl flex flex-col items-center justify-center animate-pulse rounded-3xl overflow-hidden shadow-[0_0_100px_#ffffff] pointer-events-none">
             <div className="relative flex flex-col items-center justify-center animate-bounce">
               <span className="text-8xl drop-shadow-[0_0_30px_#ff0000] scale-150">👻</span>
               <div className="text-4xl font-black text-red-600 tracking-widest mt-4 uppercase animate-ping">
                 WRAAAAAAAAHHHH!!!!!
               </div>
               <p className="text-sm font-black text-slate-900 mt-2 uppercase tracking-wider">
-                BIAŁY DEMON ROZERWAŁ PLANSZĘ W PÓŁ!
+                BIAŁY DEMON WSTRZĄSNĄŁ PLANSZĄ!
               </p>
             </div>
           </div>
         )}
 
-        {/* MASSIVE Checkers Board Container (With crack animation when split!) */}
+        {/* MASSIVE Checkers Board Container */}
         <div
           className={`grid gap-1 p-3 bg-slate-900/90 border-4 rounded-3xl backdrop-blur-md transition-all duration-500 relative ${
             isBoardSplit
-              ? 'border-red-600 shadow-[0_0_80px_#ff0000] divide-y-4 divide-red-600 rotate-1 scale-95'
+              ? 'border-red-600 shadow-[0_0_80px_rgba(255,0,0,0.8)] divide-y-4 divide-red-600 rotate-1 scale-95'
               : 'border-cyan-500/40 shadow-[0_0_60px_rgba(0,255,255,0.3)]'
           }`}
           style={{
@@ -130,7 +138,6 @@ export default function GameBoard({
             height: 'clamp(500px, 86vh, 900px)',
           }}
         >
-          {/* Jagged red fracture line when board is split in half */}
           {isBoardSplit && (
             <div className="absolute inset-0 border-t-8 border-b-8 border-red-600/80 pointer-events-none z-30 animate-pulse" />
           )}
@@ -181,14 +188,12 @@ export default function GameBoard({
                       : 'bg-slate-950 border border-slate-800/80 hover:border-cyan-400/50 hover:bg-slate-900'
                   }`}
                 >
-                  {/* Irradiated Overlay */}
                   {tile.irradiatedTurns > 0 && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-emerald-500/10 pointer-events-none">
                       <Biohazard className="w-7 h-7 text-emerald-400 animate-spin text-opacity-80" />
                     </div>
                   )}
 
-                  {/* Brothel Indicator */}
                   {tile.isBrothel && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-pink-500/10 pointer-events-none">
                       <Home className="w-8 h-8 text-pink-400 animate-bounce" />
@@ -196,31 +201,26 @@ export default function GameBoard({
                     </div>
                   )}
 
-                  {/* Landmine Indicator */}
                   {tile.isMine && (
                     <div className="absolute top-1 left-1 opacity-70 pointer-events-none">
                       <Bomb className="w-4 h-4 text-red-500 animate-bounce" />
                     </div>
                   )}
 
-                  {/* Valid Move Indicator */}
                   {isValidMove && !tile.piece && (
                     <div className="w-5 h-5 rounded-full bg-emerald-400 shadow-[0_0_15px_#00ff66] animate-ping" />
                   )}
 
-                  {/* Nuke Crosshair */}
                   {activeAbility === 'nuke' && isHovered && (
                     <Crosshair className="absolute w-10 h-10 text-rose-500 animate-spin z-20" />
                   )}
 
-                  {/* Placement Dot */}
                   {isPlaceTargetable && (
                     <div className="w-8 h-8 rounded-full border-2 border-yellow-400 bg-yellow-400/30 flex items-center justify-center animate-ping">
                       <span className="text-sm font-bold text-yellow-300">+</span>
                     </div>
                   )}
 
-                  {/* Checker / Chess / Demon Piece Component */}
                   {tile.piece && (
                     <div
                       className={`relative w-[82%] h-[82%] rounded-full flex items-center justify-center transition-transform duration-200 shadow-2xl ${
@@ -229,19 +229,16 @@ export default function GameBoard({
                           : 'bg-gradient-to-br from-cyan-400 via-sky-600 to-blue-950 border-2 border-cyan-200 shadow-[0_0_20px_rgba(0,255,255,0.7)]'
                       } ${isSelected ? 'scale-110 ring-4 ring-cyan-300' : 'hover:scale-105'}`}
                     >
-                      {/* Invincibility Shield Aura */}
                       {tile.piece.isInvincible > 0 && (
                         <div className="absolute -inset-2 rounded-full border-2 border-cyan-300 animate-spin shadow-[0_0_20px_#00ffff] pointer-events-none flex items-center justify-center">
                           <Shield className="w-4 h-4 text-cyan-300 absolute -top-2.5" />
                         </div>
                       )}
 
-                      {/* Distracted Status */}
                       {tile.piece.isDistracted > 0 && (
                         <span className="absolute -top-4 text-base animate-bounce">💕</span>
                       )}
 
-                      {/* Piece Icon Display */}
                       <div className="w-[74%] h-[74%] rounded-full border border-white/30 flex items-center justify-center bg-black/20">
                         {tile.piece.type === 'demon' ? (
                           <span className="text-3xl animate-bounce">👹</span>
